@@ -1,0 +1,43 @@
+#typed-quotes-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.01rem; 
+    margin-bottom: 0.01rem; 
+    min-height: 20px; 
+}
+#typed-quotes {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #334155; 
+    min-height: 20px; 
+    display: inline-block; 
+}
+.dark #typed-quotes {
+    color: #cbd5e1;
+}
+* {
+    scrollbar-width: none; 
+    -ms-overflow-style: none;  
+}
+*::-webkit-scrollbar {
+    display: none; 
+}
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar {
+    display: none;
+}
+.overflow-y-auto,
+.overflow-x-auto {
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+}
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

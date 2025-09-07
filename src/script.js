@@ -128,6 +128,7 @@
           if (!isOpen) return null;
           const sizeClasses = {
               default: 'max-w-md w-full',
+              large: 'max-w-2xl w-full',
               fullscreen: 'w-[95vw] h-[85vh] max-w-7xl',
           };
           return (
@@ -229,45 +230,65 @@
             </div>
         );
     };
-      const TaskWidget = ({ period, tasks, onAreaClick, onCompleteTask, onRemoveTask }) => {
-        const total = tasks.length;
-        const completed = tasks.filter(t => t.completed).length;
+    const TaskWidget = ({ period, tasks, onAreaClick, onCompleteSubTask, onRemoveTask, onRemoveSubTask }) => {
+        const allSubTasks = tasks.flatMap(t => t.subTasks);
+        const total = allSubTasks.length;
+        const completed = allSubTasks.filter(st => st.completed).length;
         const progress = total > 0 ? (completed / total) * 100 : 0;
         const icons = {
-          [TaskPeriod.Day]: <SunIcon className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />,
-          [TaskPeriod.Week]: <WeekIcon className="w-5 h-5 text-sky-500 dark:text-sky-400" />,
-          [TaskPeriod.Month]: <MoonIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />,
+            [TaskPeriod.Day]: <SunIcon className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />,
+            [TaskPeriod.Week]: <WeekIcon className="w-5 h-5 text-sky-500 dark:text-sky-400" />,
+            [TaskPeriod.Month]: <MoonIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />,
         };
         return (
-          <Widget className="flex-1 min-w-[280px] flex flex-col" onClick={onAreaClick}>
+            <Widget className="flex-1 min-w-[280px] flex flex-col" onClick={tasks.length === 0 ? onAreaClick : undefined}>
             <div className="flex items-center gap-2 mb-2">
-              {icons[period]}
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">{period.charAt(0).toUpperCase() + period.slice(1)} Tasks</h2>
+                {icons[period]}
+                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">{period.charAt(0).toUpperCase() + period.slice(1)} Tasks</h2>
+                <button onClick={onAreaClick} title={`Add ${period} task`} className="ml-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <PlusIcon className="w-6 h-6"/>
+                </button>
             </div>
             <div className="text-sm space-y-1 overflow-y-auto pr-2 flex-grow">
-              {tasks.length > 0 ? tasks.map(task => (
-                <div 
-                  key={task.id}
-                  className={`group flex items-center justify-between gap-2 p-1 rounded transition-colors cursor-pointer ${
-                      !task.completed && 'hover:bg-slate-200/60 dark:hover:bg-white/10'
-                  }`}
-                >
-                  <span className={`flex-grow ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-300'}`}>
-                      {task.text}
-                  </span>
-                   {!task.completed && (
-                      <div className="flex items-center flex-shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={(e) => { e.stopPropagation(); onCompleteTask(task); }} title="Mark Complete" className="p-1 rounded-full text-green-600 dark:text-green-500 hover:bg-green-500/10"><CheckIcon className="w-5 h-5"/></button>
-                          <button onClick={(e) => { e.stopPropagation(); onRemoveTask(task.id); }} title="Delete Task" className="p-1 rounded-full text-red-600 dark:text-red-500 hover:bg-red-500/10"><TrashIcon className="w-4 h-4"/></button>
-                      </div>
-                  )}
+                {tasks.length > 0 ? tasks.map((task, index) => (
+                <div key={task.id} className="group/list">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                        {task.title && <h3 className="font-bold text-slate-800 dark:text-slate-200 truncate">{task.title}</h3>}
+                        <button onClick={(e) => { e.stopPropagation(); onRemoveTask(task.id); }} title="Delete Task Group" className="ml-auto p-1 rounded-full text-red-600 dark:text-red-500 hover:bg-red-500/10 opacity-0 group-hover/list:opacity-100 transition-opacity">
+                            <TrashIcon className="w-4 h-4"/>
+                        </button>
+                    </div>
+                    <div className="space-y-1 pl-2">
+                        {task.subTasks.map(subTask => (
+                            <div
+                                key={subTask.id}
+                                className={`group/item flex items-start justify-between gap-2 p-1 rounded transition-colors ${
+                                    !subTask.completed && 'hover:bg-slate-200/60 dark:hover:bg-white/10'
+                                }`}
+                            >
+                                <div className="flex items-start gap-2 flex-grow">
+                                    <span className={`flex-shrink-0 font-sans ${subTask.completed ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-300'}`}>{task.bullet}</span>
+                                    <span className={`flex-grow ${subTask.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-300'}`}>
+                                        {subTask.text}
+                                    </span>
+                                </div>
+                                <div className="flex items-center flex-shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                    {!subTask.completed && (
+                                        <button onClick={(e) => { e.stopPropagation(); onCompleteSubTask(task.id, subTask.id); }} title="Mark Complete" className="p-1 rounded-full text-green-600 dark:text-green-500 hover:bg-green-500/10"><CheckIcon className="w-5 h-5"/></button>
+                                    )}
+                                    <button onClick={(e) => { e.stopPropagation(); onRemoveSubTask(task.id, subTask.id); }} title="Delete Sub-task" className="p-1 rounded-full text-red-600 dark:text-red-500 hover:bg-red-500/10"><TrashIcon className="w-4 h-4"/></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {index < tasks.length - 1 && <hr className="my-3 border-slate-200 dark:border-white/10" />}
                 </div>
-              )) : <p className="text-slate-500 h-full flex items-center justify-center cursor-pointer select-none">Click to add a task</p>}
+                )) : <p className="text-slate-500 h-full flex items-center justify-center cursor-pointer select-none">Click the '+' to add a task</p>}
             </div>
             <ProgressBar percentage={progress} displayPercentage={true} />
-          </Widget>
+            </Widget>
         );
-      };
+    };
       const CalendarWidget = ({ currentDate, onHeaderClick }) => {
           const year = currentDate.getFullYear();
           const month = currentDate.getMonth();
@@ -529,40 +550,86 @@
           setModal(null);
           setModalData(null);
         };
-        const addTask = (period, text) => {
-          if (!text.trim()) return;
-          const newTask = { id: crypto.randomUUID(), text: text.trim(), completed: false };
-          const taskSetter = {
-            [TaskPeriod.Day]: setDayTasks,
-            [TaskPeriod.Week]: setWeekTasks,
-            [TaskPeriod.Month]: setMonthTasks,
-          }[period];
-          taskSetter(prev => [...prev, newTask]);
-          setStarsData(prev => ({...prev, totalTasks: prev.totalTasks + 1}));
-          closeModal();
+        const addTask = (period, { title, tasksString, bullet }) => {
+            if (!tasksString.trim()) return;
+            const subTasks = tasksString.split('\n')
+                .map(line => line.trim())
+                .filter(line => line)
+                .map(line => ({ id: crypto.randomUUID(), text: line, completed: false }));
+            if (subTasks.length === 0) return;
+            const newTask = {
+                id: crypto.randomUUID(),
+                title: title.trim(),
+                subTasks,
+                bullet: bullet || '•'
+            };
+            const taskSetter = {
+                [TaskPeriod.Day]: setDayTasks,
+                [TaskPeriod.Week]: setWeekTasks,
+                [TaskPeriod.Month]: setMonthTasks,
+            }[period];
+            taskSetter(prev => [...prev, newTask]);
+            setStarsData(prev => ({...prev, totalTasks: prev.totalTasks + subTasks.length}));
+            closeModal();
         };
         const removeTask = (period, id) => {
-          if (!window.confirm("Are you sure you want to delete this task?")) return;
-          const taskSetter = {
-            [TaskPeriod.Day]: setDayTasks,
-            [TaskPeriod.Week]: setWeekTasks,
-            [TaskPeriod.Month]: setMonthTasks,
-          }[period];
-          taskSetter(prev => prev.filter(t => t.id !== id));
-          setStarsData(prev => ({...prev, totalTasks: Math.max(0, prev.totalTasks - 1)}));
+            if (!window.confirm("Are you sure you want to delete this entire task group?")) return;
+            
+            let tasksToRemove = [];
+            const taskSetter = {
+                [TaskPeriod.Day]: (setter) => { tasksToRemove = dayTasks; setDayTasks(setter); },
+                [TaskPeriod.Week]: (setter) => { tasksToRemove = weekTasks; setWeekTasks(setter); },
+                [TaskPeriod.Month]: (setter) => { tasksToRemove = monthTasks; setMonthTasks(setter); },
+            }[period];
+            const taskGroup = tasksToRemove.find(t => t.id === id);
+            const subTaskCount = taskGroup ? taskGroup.subTasks.length : 0;
+            
+            taskSetter(prev => prev.filter(t => t.id !== id));
+            setStarsData(prev => ({...prev, totalTasks: Math.max(0, prev.totalTasks - subTaskCount)}));
         };
-        const completeTask = (period, id) => {
-          const taskSetter = {
-            [TaskPeriod.Day]: setDayTasks,
-            [TaskPeriod.Week]: setWeekTasks,
-            [TaskPeriod.Month]: setMonthTasks,
-          }[period];
-          taskSetter(prev => prev.map(t => t.id === id ? {...t, completed: true} : t));
-          setStarsData(prev => ({
-            ...prev,
-            stars: { ...prev.stars, [period]: prev.stars[period] + 1 },
-            totalEarned: prev.totalEarned + 1
-          }));
+        const removeSubTask = (period, groupId, subTaskId) => {
+             if (!window.confirm("Are you sure you want to delete this task?")) return;
+            const taskSetter = {
+                [TaskPeriod.Day]: setDayTasks,
+                [TaskPeriod.Week]: setWeekTasks,
+                [TaskPeriod.Month]: setMonthTasks,
+            }[period];
+            taskSetter(prev => prev.map(group => {
+                if (group.id === groupId) {
+                    const newSubTasks = group.subTasks.filter(sub => sub.id !== subTaskId);
+                    // If no subtasks are left, remove the whole group
+                    if (newSubTasks.length === 0) {
+                        setStarsData(prevData => ({...prevData, totalTasks: Math.max(0, prevData.totalTasks - group.subTasks.length)}));
+                        return null;
+                    }
+                    return { ...group, subTasks: newSubTasks };
+                }
+                return group;
+            }).filter(Boolean)); // filter(Boolean) removes null entries
+            setStarsData(prev => ({...prev, totalTasks: Math.max(0, prev.totalTasks - 1)}));
+        };
+        const completeSubTask = (period, groupId, subTaskId) => {
+            const taskSetter = {
+                [TaskPeriod.Day]: setDayTasks,
+                [TaskPeriod.Week]: setWeekTasks,
+                [TaskPeriod.Month]: setMonthTasks,
+            }[period];
+            taskSetter(prev => prev.map(group => {
+                if (group.id === groupId) {
+                    return {
+                        ...group,
+                        subTasks: group.subTasks.map(sub =>
+                            sub.id === subTaskId ? { ...sub, completed: true } : sub
+                        )
+                    };
+                }
+                return group;
+            }));
+            setStarsData(prev => ({
+                ...prev,
+                stars: { ...prev.stars, [period]: prev.stars[period] + 1 },
+                totalEarned: prev.totalEarned + 1
+            }));
         };
         const addOrUpdateNote = (type, data, id = null) => {
           const content = typeof data === 'string' ? data : data.content;
@@ -739,9 +806,9 @@
                 </div>
             )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow">
-                  <TaskWidget period={TaskPeriod.Day} tasks={dayTasks} onAreaClick={() => openModal('add-task', {period: TaskPeriod.Day})} onCompleteTask={(task) => completeTask(TaskPeriod.Day, task.id)} onRemoveTask={(id) => removeTask(TaskPeriod.Day, id)} />
-                  <TaskWidget period={TaskPeriod.Week} tasks={weekTasks} onAreaClick={() => openModal('add-task', {period: TaskPeriod.Week})} onCompleteTask={(task) => completeTask(TaskPeriod.Week, task.id)} onRemoveTask={(id) => removeTask(TaskPeriod.Week, id)} />
-                  <TaskWidget period={TaskPeriod.Month} tasks={monthTasks} onAreaClick={() => openModal('add-task', {period: TaskPeriod.Month})} onCompleteTask={(task) => completeTask(TaskPeriod.Month, task.id)} onRemoveTask={(id) => removeTask(TaskPeriod.Month, id)} />
+                  <TaskWidget period={TaskPeriod.Day} tasks={dayTasks} onAreaClick={() => openModal('add-task', {period: TaskPeriod.Day})} onCompleteSubTask={(groupId, subTaskId) => completeSubTask(TaskPeriod.Day, groupId, subTaskId)} onRemoveTask={(id) => removeTask(TaskPeriod.Day, id)} onRemoveSubTask={(groupId, subTaskId) => removeSubTask(TaskPeriod.Day, groupId, subTaskId)} />
+                  <TaskWidget period={TaskPeriod.Week} tasks={weekTasks} onAreaClick={() => openModal('add-task', {period: TaskPeriod.Week})} onCompleteSubTask={(groupId, subTaskId) => completeSubTask(TaskPeriod.Week, groupId, subTaskId)} onRemoveTask={(id) => removeTask(TaskPeriod.Week, id)} onRemoveSubTask={(groupId, subTaskId) => removeSubTask(TaskPeriod.Week, groupId, subTaskId)} />
+                  <TaskWidget period={TaskPeriod.Month} tasks={monthTasks} onAreaClick={() => openModal('add-task', {period: TaskPeriod.Month})} onCompleteSubTask={(groupId, subTaskId) => completeSubTask(TaskPeriod.Month, groupId, subTaskId)} onRemoveTask={(id) => removeTask(TaskPeriod.Month, id)} onRemoveSubTask={(groupId, subTaskId) => removeSubTask(TaskPeriod.Month, groupId, subTaskId)} />
               </div>
               <RenderModals 
                   modal={modal} 
@@ -762,8 +829,7 @@
       const ManageTargetsModalContent = ({ targets, onAddTarget, onDeleteTarget, onClose }) => {
           const [label, setLabel] = useState('');
           const [date, setDate] = useState('');
-          const commonInputClass = "bg-slate-200 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 text-slate-900 dark:text-white rounded p-2 w-full focus:ring-sky-500 dark:focus:ring-sky-500 focus:border-sky-500 dark:focus:border-sky-500 placeholder-slate-500 dark:placeholder-slate-400 transition-colors";
-          const btnClass = "bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 text-white font-bold py-2 px-4 rounded w-full transition-colors";
+          const commonInputClass = "bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-md p-2 w-full focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-500 focus:border-sky-500 dark:focus:border-sky-500 placeholder-slate-500 dark:placeholder-slate-400 transition-colors";
           const handleSubmit = (e) => {
               e.preventDefault();
               onAddTarget(label, date);
@@ -772,33 +838,98 @@
           };
           return (
             <>
-              <div className="flex justify-between items-center mb-4 p-6 pb-0">
+              <div className="flex justify-between items-center p-4 border-b border-slate-300 dark:border-slate-800 flex-shrink-0">
                   <h2 className="text-xl text-slate-900 dark:text-slate-100 font-bold">Manage Countdowns</h2>
                   <button onClick={onClose} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl leading-none transition-colors">&times;</button>
               </div>
-              <div className="space-y-6 p-6">
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                      <h3 className="text-lg text-slate-600 dark:text-slate-400">Existing Targets</h3>
-                      {targets.length > 0 ? targets.map(t => (
-                          <div key={t.id} className="flex justify-between items-center bg-slate-200/50 dark:bg-slate-800/50 p-2 rounded">
-                              <div>
-                                  <p className="text-slate-800 dark:text-slate-200">{t.label}</p>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{t.date}</p>
-                              </div>
-                              <button onClick={() => onDeleteTarget(t.id)} className="text-red-500 hover:text-red-400 text-xl leading-none transition-colors">&times;</button>
-                          </div>
-                      )) : <p className="text-slate-500 dark:text-slate-400 text-sm">No countdowns set.</p>}
-                  </div>
-                  <form onSubmit={handleSubmit} className="space-y-4 border-t border-slate-300 dark:border-slate-700 pt-4">
-                       <h3 className="text-lg text-slate-600 dark:text-slate-400">Add New Target</h3>
-                       <input type="text" value={label} onChange={e => setLabel(e.target.value)} placeholder="Countdown label" className={commonInputClass} autoFocus/>
-                       <input type="date" value={date} onChange={e => setDate(e.target.value)} className={`${commonInputClass} font-mono`}/>
-                       <button type="submit" className={btnClass}>Set Target</button>
-                  </form>
-              </div>
+               <div className="p-4 space-y-4 flex-grow overflow-y-auto">
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Existing Targets</h3>
+                        {targets.length > 0 ? targets.map(t => (
+                            <div key={t.id} className="flex justify-between items-center bg-slate-100 dark:bg-slate-800/50 p-3 rounded-lg">
+                                <div>
+                                    <p className="font-semibold text-slate-800 dark:text-slate-200">{t.label}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">{t.date}</p>
+                                </div>
+                                <button onClick={() => onDeleteTarget(t.id)} className="p-2 rounded-full text-red-600 dark:text-red-500 hover:bg-red-500/10 transition-colors" title="Delete Countdown">
+                                    <TrashIcon className="w-5 h-5"/>
+                                </button>
+                            </div>
+                        )) : <p className="text-slate-500 dark:text-slate-400 text-sm py-4 text-center">No countdowns set.</p>}
+                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-3 border-t border-slate-300 dark:border-slate-700 pt-4">
+                         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Add New Target</h3>
+                         <input type="text" value={label} onChange={e => setLabel(e.target.value)} placeholder="Countdown label" className={commonInputClass} autoFocus/>
+                         <input type="date" value={date} onChange={e => setDate(e.target.value)} className={`${commonInputClass} font-mono`}/>
+                         <button type="submit" className="w-full bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Set Target</button>
+                    </form>
+                </div>
             </>
           );
       };
+      const AddTaskModalContent = ({ period, onSave, onClose }) => {
+        const [title, setTitle] = useState('');
+        const [tasksString, setTasksString] = useState('');
+        const [selectedBullet, setSelectedBullet] = useState('•');
+        const bulletOptions = ['•', '-', '–', '>', '→', '*'];
+        const handleSave = () => {
+            if (!tasksString.trim()) {
+                alert("Please add at least one task.");
+                return;
+            }
+            onSave(period, { title, tasksString, bullet: selectedBullet });
+        };
+        return (
+            <>
+                <div className="flex justify-between items-center p-4 border-b border-slate-300 dark:border-slate-800 flex-shrink-0">
+                    <h2 className="text-xl text-slate-900 dark:text-slate-100 font-bold">Add {period} Task</h2>
+                    <div className="flex items-center gap-2">
+                        <button onClick={handleSave} className="flex items-center gap-2 p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="Save Task">
+                            <SaveIcon/>
+                            <span>Save</span>
+                        </button>
+                         <button onClick={onClose} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl leading-none transition-colors">&times;</button>
+                    </div>
+                </div>
+                <div className="flex flex-col h-full p-4 space-y-4">
+                    <input 
+                        type="text"
+                        value={title}
+                        onChange={e => setTitle(e.target.value)}
+                        placeholder="Title (optional)"
+                        className="w-full bg-transparent text-xl font-bold focus:outline-none placeholder-slate-500 flex-shrink-0"
+                        autoFocus
+                    />
+                    <textarea 
+                        value={tasksString} 
+                        onChange={e => setTasksString(e.target.value)} 
+                        placeholder="Your tasks here... (one task per line)"
+                        className="w-full h-full bg-transparent text-base resize-none focus:outline-none placeholder-slate-500"
+                    />
+                    <div className="flex-shrink-0">
+                         <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Bullet Style</label>
+                         <div className="flex items-center justify-start flex-wrap gap-2 bg-slate-100 dark:bg-slate-900/50 p-2 rounded-md">
+                            {bulletOptions.map(bullet => (
+                                <button
+                                    key={bullet}
+                                    type="button"
+                                    onClick={() => setSelectedBullet(bullet)}
+                                    title={`Set bullet to ${bullet}`}
+                                    className={`w-10 h-10 rounded flex items-center justify-center text-lg font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-900 focus:ring-sky-500 ${
+                                        selectedBullet === bullet 
+                                            ? 'bg-sky-500 text-white' 
+                                            : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
+                                    }`}
+                                >
+                                    {bullet}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </>
+        )
+    };
       const NotepadModalContent = ({ note, onSave, onDelete, onClose }) => {
         const [title, setTitle] = useState(note?.title || '');
         const [content, setContent] = useState(note?.content || '');
@@ -908,17 +1039,12 @@
           const commonInputClass = "bg-slate-200 dark:bg-slate-900 border border-slate-400 dark:border-slate-700 text-slate-900 dark:text-white rounded p-2 w-full focus:ring-sky-500 dark:focus:ring-sky-500 focus:border-sky-500 dark:focus:border-sky-500 placeholder-slate-500 dark:placeholder-slate-400 transition-colors";
           const btnPrimaryClass = "bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 text-white font-bold py-2 px-4 rounded w-full transition-colors";
           if (modal === 'add-task') {
-            return <Modal isOpen={true} onClose={closeModal}>
-                <div className="flex justify-between items-center p-6 pb-4">
-                    <h2 className="text-xl text-slate-900 dark:text-slate-100 font-bold">Add {modalData.period} Task</h2>
-                    <button onClick={closeModal} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl leading-none">&times;</button>
-                </div>
-                <div className="p-6 pt-0">
-                    <form onSubmit={(e) => { e.preventDefault(); onAddTask(modalData.period, text);}} className="space-y-4">
-                        <input type="text" value={text} onChange={e => setText(e.target.value)} placeholder="New task description..." className={commonInputClass} autoFocus/>
-                        <button type="submit" className={btnPrimaryClass}>Add Task</button>
-                    </form>
-                </div>
+            return <Modal isOpen={true} onClose={closeModal} size="fullscreen">
+                <AddTaskModalContent 
+                    period={modalData.period} 
+                    onSave={onAddTask} 
+                    onClose={closeModal} 
+                />
             </Modal>;
           }
           if (modal === 'add-link-note' || modal === 'edit-link-note') {
@@ -958,7 +1084,7 @@
             </Modal>;
           }
           if (modal === 'manage-targets') {
-              return <Modal isOpen={true} onClose={closeModal}>
+              return <Modal isOpen={true} onClose={closeModal} size="large">
                 <ManageTargetsModalContent 
                     targets={targets} 
                     onAddTarget={onAddTarget} 
